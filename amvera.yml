@@ -10,4 +10,4 @@ build:
 run:
   persistenceMount: /data
   containerPort: 5000
-  command: gunicorn app:app
+  command: gunicorn --bind 0.0.0.0:5000 app:app
