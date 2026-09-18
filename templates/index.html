@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}PAMIR ESTATE — Ваш дом. Ваш агент. Ваши эмоции.{% endblock %}
+
+{% block content %}
+<!-- Hero-секция с горами -->
+<section class="hero text-white py-5">
+    <div class="container">
+        <h1 class="display-4">PAMIR ESTATE</h1>
+        <p class="lead">Ваш дом. Ваш агент. Ваши эмоции.</p>
+
+        <form class="row g-3 mt-4" action="{{ url_for('catalog') }}" method="get">
+            <div class="col-md-2">
+                <select name="type" class="form-select">
+                    <option value="">Тип недвижимости</option>
+                    <option value="new">Новостройки</option>
+                    <option value="secondary">Вторичка</option>
+                    <option value="country">Загородная</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="city" class="form-select">
+                    <option value="">Все города</option>
+                    {% for c in cities %}
+                    <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="metro" class="form-control" placeholder="Метро">
+            </div>
+            <div class="col-md-2">
+                <input type="number" name="min_price" class="form-control" placeholder="Цена от">
+            </div>
+            <div class="col-md-2">
+                <input type="number" name="max_price" class="form-control" placeholder="Цена до">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-find w-100">Найти</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="container mt-4">
+    <h2>Новостройки</h2>
+    <div class="row">
+        {% for prop in new_buildings %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <img src="{{ prop.image_url or 'https://placehold.co/400x300' }}" class="card-img-top" alt="{{ prop.title }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ prop.title }}</h5>
+                    <p class="card-text">
+                        {% if prop.city %}<strong>{{ prop.city }}</strong>, {% endif %}{{ prop.address }}
+                    </p>
+                    <p class="fw-bold text-primary">{{ "{:,.0f}".format(prop.price) }} ₽</p>
+                    <a href="{{ url_for('property_detail', property_id=prop.id) }}" class="btn btn-outline-primary">Подробнее</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="container mt-5">
+    <h2>Вторичное жильё</h2>
+    <div class="row">
+        {% for prop in secondary %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <img src="{{ prop.image_url or 'https://placehold.co/400x300' }}" class="card-img-top" alt="{{ prop.title }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ prop.title }}</h5>
+                    <p class="card-text">
+                        {% if prop.city %}<strong>{{ prop.city }}</strong>, {% endif %}{{ prop.address }}
+                    </p>
+                    <p class="fw-bold text-primary">{{ "{:,.0f}".format(prop.price) }} ₽</p>
+                    <a href="{{ url_for('property_detail', property_id=prop.id) }}" class="btn btn-outline-primary">Подробнее</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="container mt-5">
+    <h2>Загородная недвижимость</h2>
+    <div class="row">
+        {% for prop in country %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <img src="{{ prop.image_url or 'https://placehold.co/400x300' }}" class="card-img-top" alt="{{ prop.title }}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ prop.title }}</h5>
+                    <p class="card-text">
+                        {% if prop.city %}<strong>{{ prop.city }}</strong>, {% endif %}{{ prop.address }}
+                    </p>
+                    <p class="fw-bold text-primary">{{ "{:,.0f}".format(prop.price) }} ₽</p>
+                    <a href="{{ url_for('property_detail', property_id=prop.id) }}" class="btn btn-outline-primary">Подробнее</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="bg-light py-5 mt-5">
+    <div class="container">
+        <h2 class="text-center">Бесплатная консультация с экспертом</h2>
+        <p class="text-center">Оставьте заявку, и наш специалист свяжется с вами в ближайшее время</p>
+        <form id="consultationForm" class="row justify-content-center g-3">
+            <div class="col-md-4">
+                <input type="text" name="name" class="form-control" placeholder="Ваше имя" required>
+            </div>
+            <div class="col-md-4">
+                <input type="tel" name="phone" class="form-control" placeholder="Телефон" required>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Отправить</button>
+            </div>
+        </form>
+        <div id="consultationMessage" class="text-center mt-3"></div>
+    </div>
+</section>
+{% endblock %}

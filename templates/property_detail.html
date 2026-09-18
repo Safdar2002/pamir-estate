@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ property.title }} — PAMIR ESTATE{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}">Главная</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('catalog') }}">Каталог</a></li>
+            <li class="breadcrumb-item active">{{ property.title }}</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-6">
+            <img id="mainImage"
+                 src="{{ property.image_url or 'https://placehold.co/600x400' }}"
+                 class="img-fluid rounded mb-2"
+                 alt="{{ property.title }}"
+                 style="width: 100%; aspect-ratio: 4/3; object-fit: cover;">
+
+            {% if property.images %}
+            <div class="row g-2">
+                {% if property.image_url %}
+                <div class="col-3">
+                    <img src="{{ property.image_url }}"
+                         class="img-fluid rounded thumbnail-img"
+                         style="cursor: pointer; aspect-ratio: 4/3; object-fit: cover;"
+                         onclick="document.getElementById('mainImage').src = this.src;">
+                </div>
+                {% endif %}
+                {% for img in property.images %}
+                <div class="col-3">
+                    <img src="{{ img.image_url }}"
+                         class="img-fluid rounded thumbnail-img"
+                         style="cursor: pointer; aspect-ratio: 4/3; object-fit: cover;"
+                         onclick="document.getElementById('mainImage').src = this.src;">
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-6">
+            <h1>{{ property.title }}</h1>
+            <p class="lead">
+                {% if property.city %}<strong>{{ property.city }}</strong>, {% endif %}{{ property.address }}
+            </p>
+            <p class="fs-3 fw-bold text-primary">{{ "{:,.0f}".format(property.price) }} ₽</p>
+
+            <ul class="list-group mb-4">
+                {% if property.city %}<li class="list-group-item">Город: {{ property.city }}</li>{% endif %}
+                {% if property.metro %}<li class="list-group-item">Метро: {{ property.metro }}</li>{% endif %}
+                {% if property.street %}<li class="list-group-item">Улица: {{ property.street }}</li>{% endif %}
+                {% if property.rooms %}<li class="list-group-item">Комнат: {{ property.rooms }}</li>{% endif %}
+                {% if property.area %}<li class="list-group-item">Площадь: {{ property.area }} м²</li>{% endif %}
+                {% if property.floor %}<li class="list-group-item">Этаж: {{ property.floor }} из {{ property.total_floors }}</li>{% endif %}
+                <li class="list-group-item">Тип:
+                    {% if property.property_type == 'new' %}Новостройка
+                    {% elif property.property_type == 'secondary' %}Вторичка
+                    {% else %}Загородная{% endif %}
+                </li>
+            </ul>
+
+            <p>{{ property.description }}</p>
+
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#callbackModal">Записаться на просмотр</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="callbackModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Записаться на просмотр</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="callbackForm" data-property-id="{{ property.id }}">
+                    <div class="mb-3">
+                        <label class="form-label">Ваше имя</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Телефон</label>
+                        <input type="tel" name="phone" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Отправить</button>
+                </form>
+                <div id="callbackMessage" class="mt-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if property %}Редактировать объект{% else %}Новый объект{% endif %} — PAMIR ESTATE{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>{% if property %}Редактировать объект{% else %}Новый объект{% endif %}</h1>
+
+    <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary mb-3">← Назад к списку</a>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endwith %}
+
+    <form method="post" enctype="multipart/form-data">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Основная информация</h5>
+
+                        <div class="mb-3">
+                            <label class="form-label">Название *</label>
+                            <input type="text" name="title" class="form-control" required
+                                   value="{{ property.title if property else '' }}"
+                                   placeholder="Например: 2-комнатная квартира в новостройке">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Описание</label>
+                            <textarea name="description" class="form-control" rows="4"
+                                      placeholder="Панорамные окна, отделка под ключ...">{{ property.description if property else '' }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Тип *</label>
+                                <select name="property_type" class="form-select" required>
+                                    <option value="new" {% if property and property.property_type == 'new' %}selected{% endif %}>Новостройка</option>
+                                    <option value="secondary" {% if property and property.property_type == 'secondary' %}selected{% endif %}>Вторичка</option>
+                                    <option value="country" {% if property and property.property_type == 'country' %}selected{% endif %}>Загородная</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Цена, ₽ *</label>
+                                <input type="number" name="price" class="form-control" required step="1000"
+                                       value="{{ property.price|int if property else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Адрес</h5>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Город</label>
+                                <input type="text" name="city" class="form-control"
+                                       value="{{ property.city if property else '' }}"
+                                       placeholder="Москва">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Метро</label>
+                                <input type="text" name="metro" class="form-control"
+                                       value="{{ property.metro if property else '' }}">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Улица</label>
+                            <input type="text" name="street" class="form-control"
+                                   value="{{ property.street if property else '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Полный адрес *</label>
+                            <input type="text" name="address" class="form-control" required
+                                   value="{{ property.address if property else '' }}"
+                                   placeholder="ул. Авиамоторная, 10">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Параметры квартиры</h5>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Комнат</label>
+                                <input type="number" name="rooms" class="form-control" min="0"
+                                       value="{{ property.rooms if property and property.rooms else '' }}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Площадь, м²</label>
+                                <input type="number" name="area" class="form-control" step="0.1"
+                                       value="{{ property.area if property and property.area else '' }}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Этаж</label>
+                                <input type="number" name="floor" class="form-control"
+                                       value="{{ property.floor if property and property.floor else '' }}">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label">Этажей в доме</label>
+                                <input type="number" name="total_floors" class="form-control"
+                                       value="{{ property.total_floors if property and property.total_floors else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Главное фото</h5>
+
+                        {% if property and property.image_url %}
+                        <div class="mb-2">
+                            <img src="{{ property.image_url }}" class="img-fluid rounded" alt="">
+                            <p class="text-muted small mt-1">Текущее главное фото. Загрузите новое, чтобы заменить.</p>
+                        </div>
+                        {% endif %}
+
+                        <input type="file" name="image" class="form-control" accept="image/*">
+                        <small class="text-muted">JPG, PNG, GIF или WEBP, до 5 МБ.</small>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">Дополнительные фото</h5>
+
+                        {% if property and property.images %}
+                        <p class="text-muted small">Уже загружено: {{ property.images|length }}</p>
+                        <div class="row g-2 mb-3">
+                            {% for img in property.images %}
+                            <div class="col-6">
+                                <div class="position-relative">
+                                    <img src="{{ img.image_url }}" class="img-fluid rounded" alt=""
+                                         style="aspect-ratio: 4/3; object-fit: cover; width: 100%;">
+                                    <form method="post"
+                                          action="{{ url_for('admin_image_delete', image_id=img.id) }}"
+                                          style="position:absolute; top:4px; right:4px;"
+                                          onsubmit="return confirm('Удалить это фото?');">
+                                        <button type="submit"
+                                                class="btn btn-sm btn-danger"
+                                                title="Удалить">×</button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <p class="text-muted small">Пока нет дополнительных фото.</p>
+                        {% endif %}
+
+                        <label class="form-label">Добавить новые фото:</label>
+                        <input type="file" name="extra_images" class="form-control" accept="image/*" multiple>
+                        <small class="text-muted">
+                            Можно выбрать сразу несколько файлов (удерживая <kbd>Ctrl</kbd> или <kbd>Shift</kbd>).
+                        </small>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <button type="submit" class="btn btn-primary w-100 mb-2">
+                            {% if property %}Сохранить{% else %}Создать объект{% endif %}
+                        </button>
+                        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary w-100">Назад к списку</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
