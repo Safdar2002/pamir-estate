@@ -5,27 +5,21 @@
         linear-gradient(rgba(0, 0, 0, 0.45), rgba(0, 0, 0, 0.55)),
         url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1920&q=80');
     background-size: cover;
-    background-position: center;
+    background-position: center 30%;
     background-repeat: no-repeat;
     min-height: 520px;
     display: flex;
     align-items: center;
-    padding-bottom: 120px; /* запас под градиент */
-}
-/* Лого в шапке */
-.brand-logo {
-    height: 80px;
-    width: auto;
-    display: block;
+    padding-bottom: 120px;
 }
 
-@media (max-width: 768px) {
-    .brand-logo {
-        height: 40px;
-    }
+/* Контент hero поверх градиента */
+.hero > .container {
+    position: relative;
+    z-index: 2;
 }
 
-/* Плавный переход от гор к белому фону ниже */
+/* Плавный переход от гор к белому фону */
 .hero::after {
     content: '';
     position: absolute;
@@ -38,6 +32,7 @@
         rgba(255, 255, 255, 0.6) 60%,
         #ffffff 100%);
     pointer-events: none;
+    z-index: 1;
 }
 
 .hero h1 {
@@ -75,11 +70,11 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* ===== Навбар ===== */
-.navbar-brand {
-    font-weight: bold;
-    font-size: 1.5rem;
-    letter-spacing: 0.5px;
+/* ===== Лого в шапке ===== */
+.brand-logo {
+    height: 50px;
+    width: auto;
+    display: block;
 }
 
 /* ===== Миниатюры в галерее ===== */
@@ -92,20 +87,47 @@
     border-color: #0d6efd;
 }
 
-/* ===== Мобильная адаптация ===== */
+/* ===== Закрепление шапки ТОЛЬКО на десктопе (≥992px) ===== */
+@media (min-width: 992px) {
+    .navbar-sticky {
+        position: sticky;
+        top: 0;
+        z-index: 1030;
+    }
+}
+
+/* ===== Мобильная адаптация (≤768px) ===== */
 @media (max-width: 768px) {
     .hero {
-        min-height: 420px;
-        padding-top: 2rem !important;
-        padding-bottom: 100px;
+        min-height: auto;
+        padding-top: 2.5rem;
+        padding-bottom: 80px;
+        background-position: center 25%;
     }
+
     .hero::after {
-        height: 100px;
+        height: 70px;
     }
+
     .display-4 {
         font-size: 1.8rem;
     }
+
+    .hero .lead {
+        font-size: 1rem;
+    }
+
     .card-title {
         font-size: 1rem;
+    }
+
+    .brand-logo {
+        height: 40px;
+    }
+
+    /* Кнопка "Найти" — отделяем от белого фона тенью */
+    .hero .btn-find {
+        margin-top: 0.5rem;
+        box-shadow: 0 4px 12px rgba(220, 53, 69, 0.5);
     }
 }
