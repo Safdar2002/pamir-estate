@@ -95,10 +95,13 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-<!-- Плагин кластеризации -->
+<!-- Плагин кластеризации маркеров -->
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+<!-- Данные для карты: Jinja рендерит их в отдельный JSON-тег -->
+<script id="properties-data" type="application/json">{{ properties_data|tojson }}</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -114,11 +117,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // 3. Кластеризация маркеров
     var markers = L.markerClusterGroup();
 
-    // 4. Данные из Flask
-    var properties = {{ properties_data|tojson|safe }};
+    // 4. Читаем данные из JSON-тега
+    var dataEl = document.getElementById('properties-data');
+    var propertiesData = [];
+    try {
+        propertiesData = JSON.parse(dataEl.textContent);
+    } catch (e) {
+        console.error('Не удалось распарсить данные карты:', e);
+    }
 
     // 5. Добавляем маркеры
-    properties.forEach(function(prop) {
+    propertiesData.forEach(function(prop) {
         if (prop.latitude && prop.longitude) {
             var marker = L.marker([prop.latitude, prop.longitude]);
 
@@ -140,7 +149,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 6. Добавляем кластеры на карту
     map.addLayer(markers);
 
-    // 7. Если есть объекты — центрируем карту по ним
+    // 7. Центрируем карту по маркерам
     if (markers.getLayers().length > 0) {
         try {
             map.fitBounds(markers.getBounds(), { padding: [50, 50] });

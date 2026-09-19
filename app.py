@@ -5,8 +5,10 @@ from functools import wraps
 from models import db, Property, Lead, PropertyImage
 from geopy.geocoders import Nominatim
 from geopy.exc import GeocoderTimedOut, GeocoderServiceError
+from sqlalchemy import inspect, text
 import os
 import uuid
+import traceback
 
 app = Flask(__name__)
 
@@ -32,6 +34,13 @@ else:
     print('ℹ️ Локальный режим: база и загрузки в папке проекта')
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Диагностика путей
+print(f'📁 Рабочая директория: {os.getcwd()}')
+print(f'📁 База данных: {app.config["SQLALCHEMY_DATABASE_URI"]}')
+print(f'📁 Папка загрузок: {app.config["UPLOAD_FOLDER"]}')
+print(f'📁 /data существует: {os.path.exists("/data")}')
+print(f'📁 /data доступна для записи: {os.access("/data", os.W_OK) if os.path.exists("/data") else "нет"}')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
@@ -97,7 +106,7 @@ def geocode_address(address):
     if not address or not address.strip():
         return None, None
 
-    geolocator = Nominatim(user_agent="pamir_estate_app")
+    geolocator = Nominatim(user_agent="pamir_estate_app (mazambekov.safdar@mail.ru)")
     try:
         location = geolocator.geocode(address, timeout=10)
         if location:
@@ -196,7 +205,6 @@ def catalog():
     cities = [row[0] for row in db.session.query(Property.city).distinct().order_by(Property.city).all() if row[0]]
     properties = query.order_by(Property.created_at.desc()).all()
 
-    # Данные для карты
     properties_data = [{
         'id': p.id,
         'title': p.title,
@@ -298,7 +306,6 @@ def admin_dashboard():
 @login_required
 def admin_property_new():
     if request.method == 'POST':
-        # Геокодирование
         city = request.form.get('city', '')
         street = request.form.get('street', '')
         address = request.form.get('address', '')
@@ -344,7 +351,6 @@ def admin_property_new():
 def admin_property_edit(property_id):
     prop = Property.query.get_or_404(property_id)
     if request.method == 'POST':
-        # Геокодирование
         city = request.form.get('city', '')
         street = request.form.get('street', '')
         address = request.form.get('address', '')
@@ -408,11 +414,45 @@ def admin_image_delete(image_id):
     return redirect(url_for('admin_property_edit', property_id=property_id))
 
 
-# ============ ИНИЦИАЛИЗАЦИЯ БАЗЫ ============
+# ============ ИНИЦИАЛИЗАЦИЯ И МИГРАЦИЯ БАЗЫ ============
+
+def ensure_schema():
+    """Добавляет отсутствующие колонки в существующие таблицы."""
+    with app.app_context():
+        inspector = inspect(db.engine)
+
+        # Проверяем таблицу properties
+        if 'properties' in inspector.get_table_names():
+            columns = [col['name'] for col in inspector.get_columns('properties')]
+            print(f'📋 Колонки в properties: {columns}')
+
+            with db.engine.connect() as conn:
+                if 'latitude' not in columns:
+                    conn.execute(text('ALTER TABLE properties ADD COLUMN latitude FLOAT'))
+                    print('✅ Добавлена колонка latitude')
+                if 'longitude' not in columns:
+                    conn.execute(text('ALTER TABLE properties ADD COLUMN longitude FLOAT'))
+                    print('✅ Добавлена колонка longitude')
+                conn.commit()
+        else:
+            print('ℹ️ Таблица properties ещё не создана — создастся через db.create_all()')
+
+        # Проверяем таблицу leads
+        if 'leads' in inspector.get_table_names():
+            lead_columns = [col['name'] for col in inspector.get_columns('leads')]
+            print(f'📋 Колонки в leads: {lead_columns}')
+
 
 def init_db():
+    """Создаёт БД, добавляет недостающие колонки и тестовые данные."""
     with app.app_context():
+        # 1. Обновляем схему существующей БД
+        ensure_schema()
+
+        # 2. Создаём отсутствующие таблицы
         db.create_all()
+
+        # 3. Наполняем тестовыми данными, если объектов нет
         if Property.query.count() == 0:
             sample_properties = [
                 Property(title='Квартира в новостройке у метро Авиамоторная',
@@ -484,6 +524,7 @@ with app.app_context():
         init_db()
     except Exception as e:
         print(f'⚠️ Ошибка инициализации БД: {e}')
+        traceback.print_exc()
 
 
 # ============ ЗАПУСК (локально) ============
