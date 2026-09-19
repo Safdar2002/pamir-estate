@@ -8,6 +8,7 @@ from geopy.exc import GeocoderTimedOut, GeocoderServiceError
 from sqlalchemy import inspect, text
 import os
 import uuid
+import time
 import traceback
 
 app = Flask(__name__)
@@ -35,7 +36,6 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Диагностика путей
 print(f'📁 Рабочая директория: {os.getcwd()}')
 print(f'📁 База данных: {app.config["SQLALCHEMY_DATABASE_URI"]}')
 print(f'📁 Папка загрузок: {app.config["UPLOAD_FOLDER"]}')
@@ -120,6 +120,43 @@ def geocode_address(address):
         return None, None
 
 
+def auto_geocode_missing():
+    """Автоматически заполняет координаты у объектов, где их нет."""
+    with app.app_context():
+        properties = Property.query.filter(
+            (Property.latitude.is_(None)) | (Property.longitude.is_(None))
+        ).all()
+
+        if not properties:
+            print('✅ У всех объектов есть координаты')
+            return
+
+        print(f'🔎 Найдено объектов без координат: {len(properties)}')
+        updated = 0
+
+        for prop in properties:
+            full_address = ', '.join(filter(None, [prop.city, prop.street, prop.address]))
+            if not full_address.strip():
+                print(f'⚠️ #{prop.id} — нет адреса, пропускаем')
+                continue
+
+            print(f'📍 Геокодируем #{prop.id}: "{full_address}"')
+            lat, lon = geocode_address(full_address)
+
+            if lat and lon:
+                prop.latitude = lat
+                prop.longitude = lon
+                db.session.commit()
+                updated += 1
+                print(f'   ✅ {lat}, {lon}')
+            else:
+                print(f'   ❌ Не удалось')
+
+            time.sleep(1)
+
+        print(f'🎉 Обновлено объектов: {updated}')
+
+
 def send_lead_email(name, phone, source='site', property_title=None):
     subject = '📩 Новая заявка с сайта PAMIR ESTATE'
     if property_title:
@@ -146,7 +183,6 @@ def uploaded_file(filename):
 
 @app.route('/sitemap.xml')
 def sitemap():
-    """Карта сайта для поисковых систем."""
     pages = []
     for rule in ['index', 'catalog']:
         pages.append(url_for(rule, _external=True))
@@ -421,7 +457,6 @@ def ensure_schema():
     with app.app_context():
         inspector = inspect(db.engine)
 
-        # Проверяем таблицу properties
         if 'properties' in inspector.get_table_names():
             columns = [col['name'] for col in inspector.get_columns('properties')]
             print(f'📋 Колонки в properties: {columns}')
@@ -437,22 +472,16 @@ def ensure_schema():
         else:
             print('ℹ️ Таблица properties ещё не создана — создастся через db.create_all()')
 
-        # Проверяем таблицу leads
         if 'leads' in inspector.get_table_names():
             lead_columns = [col['name'] for col in inspector.get_columns('leads')]
             print(f'📋 Колонки в leads: {lead_columns}')
 
 
 def init_db():
-    """Создаёт БД, добавляет недостающие колонки и тестовые данные."""
     with app.app_context():
-        # 1. Обновляем схему существующей БД
         ensure_schema()
-
-        # 2. Создаём отсутствующие таблицы
         db.create_all()
 
-        # 3. Наполняем тестовыми данными, если объектов нет
         if Property.query.count() == 0:
             sample_properties = [
                 Property(title='Квартира в новостройке у метро Авиамоторная',
@@ -515,6 +544,13 @@ def init_db():
             print('✅ База данных инициализирована тестовыми данными.')
         else:
             print(f'ℹ️ База данных уже содержит {Property.query.count()} объектов.')
+
+        # АВТОЗАПОЛНЕНИЕ КООРДИНАТ для объектов без них
+        try:
+            auto_geocode_missing()
+        except Exception as e:
+            print(f'⚠️ Ошибка автогеокодирования: {e}')
+            traceback.print_exc()
 
 
 # ============ АВТОИНИЦИАЛИЗАЦИЯ ПРИ СТАРТЕ ============
