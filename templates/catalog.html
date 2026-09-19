@@ -6,6 +6,7 @@
 <div class="container mt-4">
     <h1>Каталог недвижимости</h1>
 
+    <!-- Фильтры -->
     <form class="row g-3 mb-4" method="get">
         <div class="col-md-2">
             <select name="type" class="form-select">
@@ -37,6 +38,12 @@
         </div>
     </form>
 
+    <!-- Карта -->
+    <div class="mb-4">
+        <div id="map" style="height: 500px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>
+    </div>
+
+    <!-- Результаты -->
     <div class="row">
         {% for prop in properties %}
         <div class="col-md-4 mb-4">
@@ -62,6 +69,7 @@
     </div>
 </div>
 
+<!-- Форма заявки в каталоге -->
 <section class="bg-light py-5 mt-5">
     <div class="container">
         <h2 class="text-center">Не нашли подходящий объект?</h2>
@@ -80,4 +88,66 @@
         <div id="catalogMessage" class="text-center mt-3"></div>
     </div>
 </section>
+{% endblock %}
+
+{% block scripts %}
+<!-- Leaflet CSS и JS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Плагин кластеризации -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 1. Инициализация карты (центр — Москва)
+    var map = L.map('map').setView([55.751244, 37.618423], 10);
+
+    // 2. Слой карты (OpenStreetMap)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+        maxZoom: 19,
+    }).addTo(map);
+
+    // 3. Кластеризация маркеров
+    var markers = L.markerClusterGroup();
+
+    // 4. Данные из Flask
+    var properties = {{ properties_data|tojson|safe }};
+
+    // 5. Добавляем маркеры
+    properties.forEach(function(prop) {
+        if (prop.latitude && prop.longitude) {
+            var marker = L.marker([prop.latitude, prop.longitude]);
+
+            var popupContent = `
+                <div style="width: 200px;">
+                    <img src="${prop.image_url || 'https://placehold.co/200x150'}"
+                         style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 8px;">
+                    <h6 style="margin: 0 0 4px 0; font-size: 14px;">${prop.title}</h6>
+                    <p style="margin: 0 0 4px 0; font-size: 12px; color: #666;">${prop.address}</p>
+                    <p style="margin: 0 0 8px 0; font-weight: bold; color: #0d6efd;">${prop.price.toLocaleString('ru-RU')} ₽</p>
+                    <a href="/property/${prop.id}" class="btn btn-sm btn-primary w-100" style="font-size: 12px;">Подробнее</a>
+                </div>
+            `;
+            marker.bindPopup(popupContent);
+            markers.addLayer(marker);
+        }
+    });
+
+    // 6. Добавляем кластеры на карту
+    map.addLayer(markers);
+
+    // 7. Если есть объекты — центрируем карту по ним
+    if (markers.getLayers().length > 0) {
+        try {
+            map.fitBounds(markers.getBounds(), { padding: [50, 50] });
+        } catch (e) {
+            console.log('Не удалось центрировать карту:', e);
+        }
+    }
+});
+</script>
 {% endblock %}

@@ -20,6 +20,8 @@ class Property(db.Model):
     floor = db.Column(db.Integer, nullable=True)
     total_floors = db.Column(db.Integer, nullable=True)
     image_url = db.Column(db.String(500), nullable=True)
+    latitude = db.Column(db.Float, nullable=True)
+    longitude = db.Column(db.Float, nullable=True)
     created_at = db.Column(db.DateTime, server_default=db.func.now())
 
     images = db.relationship('PropertyImage', backref='property',
