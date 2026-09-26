@@ -6,6 +6,11 @@
     <title>{% block title %}PAMIR ESTATE — Агентство недвижимости{% endblock %}</title>
     <meta name="description" content="{% block description %}PAMIR ESTATE — агентство недвижимости. Подбор новостроек, вторичного жилья и загородных домов. Бесплатная консультация.{% endblock %}">
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.svg') }}">
+    <meta name="theme-color" content="#0F1419">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500&display=swap" rel="stylesheet">
