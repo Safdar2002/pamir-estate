@@ -1,15 +1,14 @@
 {% extends 'base.html' %}
 
-{% block title %}PAMIR ESTATE — Ваш дом. Ваш агент. Ваши эмоции.{% endblock %}
+{% block title %}PAMIR ESTATE — Премиальная недвижимость{% endblock %}
 
 {% block content %}
-<!-- Hero-секция с горами -->
-<section class="hero text-white py-5">
+<section class="hero text-white">
     <div class="container">
-        <h1 class="display-4">PAMIR ESTATE</h1>
+        <h1>PAMIR ESTATE</h1>
         <p class="lead">Ваш дом. Ваш агент. Ваши эмоции.</p>
 
-        <form class="row g-3 mt-4" action="{{ url_for('catalog') }}" method="get">
+        <form class="row g-3" action="{{ url_for('catalog') }}" method="get">
             <div class="col-md-2">
                 <select name="type" class="form-select">
                     <option value="">Тип недвижимости</option>
@@ -42,12 +41,12 @@
     </div>
 </section>
 
-<section class="container mt-4">
+<section class="container mt-5">
     <h2>Новостройки</h2>
     <div class="row">
         {% for prop in new_buildings %}
         <div class="col-md-4 mb-4">
-            <div class="card h-100">
+            <div class="card">
                 <img src="{{ prop.image_url or 'https://placehold.co/400x300' }}" class="card-img-top" alt="{{ prop.title }}">
                 <div class="card-body">
                     <h5 class="card-title">{{ prop.title }}</h5>
@@ -68,7 +67,7 @@
     <div class="row">
         {% for prop in secondary %}
         <div class="col-md-4 mb-4">
-            <div class="card h-100">
+            <div class="card">
                 <img src="{{ prop.image_url or 'https://placehold.co/400x300' }}" class="card-img-top" alt="{{ prop.title }}">
                 <div class="card-body">
                     <h5 class="card-title">{{ prop.title }}</h5>
@@ -89,7 +88,7 @@
     <div class="row">
         {% for prop in country %}
         <div class="col-md-4 mb-4">
-            <div class="card h-100">
+            <div class="card">
                 <img src="{{ prop.image_url or 'https://placehold.co/400x300' }}" class="card-img-top" alt="{{ prop.title }}">
                 <div class="card-body">
                     <h5 class="card-title">{{ prop.title }}</h5>
@@ -105,7 +104,7 @@
     </div>
 </section>
 
-<section class="bg-light py-5 mt-5">
+<section class="bg-light py-5">
     <div class="container">
         <h2 class="text-center">Бесплатная консультация с экспертом</h2>
         <p class="text-center">Оставьте заявку, и наш специалист свяжется с вами в ближайшее время</p>
