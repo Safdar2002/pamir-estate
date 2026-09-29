@@ -10,6 +10,7 @@ import os
 import uuid
 import time
 import traceback
+import requests
 
 app = Flask(__name__)
 
@@ -53,6 +54,11 @@ app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'mazambekov.safdar@mail.ru')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_USERNAME', 'mazambekov.safdar@mail.ru')
+
+# ============ НАСТРОЙКИ TELEGRAM ============
+
+app.config['TELEGRAM_BOT_TOKEN'] = os.environ.get('TELEGRAM_BOT_TOKEN', '8625987512:AAEF3PvXOAEhW03aG644X5sksuAS6wFgKNo')
+app.config['TELEGRAM_CHAT_ID'] = os.environ.get('TELEGRAM_CHAT_ID', '1386761718')
 
 # ============ НАСТРОЙКИ ЗАГРУЗКИ ФАЙЛОВ ============
 
@@ -158,6 +164,7 @@ def auto_geocode_missing():
 
 
 def send_lead_email(name, phone, source='site', property_title=None):
+    """Отправляет заявку на email."""
     subject = '📩 Новая заявка с сайта PAMIR ESTATE'
     if property_title:
         subject += f' — {property_title}'
@@ -170,6 +177,45 @@ def send_lead_email(name, phone, source='site', property_title=None):
         body=body
     )
     mail.send(msg)
+
+
+def send_lead_telegram(name, phone, source='site', property_title=None):
+    """Отправляет заявку в Telegram через Bot API."""
+    token = app.config.get('TELEGRAM_BOT_TOKEN')
+    chat_id = app.config.get('TELEGRAM_CHAT_ID')
+
+    if not token or not chat_id:
+        print('⚠️ Telegram не настроен: нет TELEGRAM_BOT_TOKEN или TELEGRAM_CHAT_ID')
+        return False
+
+    text = (
+        f'🔔 <b>Новая заявка с сайта PAMIR ESTATE</b>\n\n'
+        f'👤 <b>Имя:</b> {name}\n'
+        f'📞 <b>Телефон:</b> {phone}\n'
+        f'📍 <b>Источник:</b> {source}'
+    )
+    if property_title:
+        text += f'\n🏠 <b>Объект:</b> {property_title}'
+
+    url = f'https://api.telegram.org/bot{token}/sendMessage'
+
+    try:
+        response = requests.post(url, data={
+            'chat_id': chat_id,
+            'text': text,
+            'parse_mode': 'HTML',
+            'disable_web_page_preview': True
+        }, timeout=10)
+
+        if response.status_code == 200:
+            print(f'✅ Заявка отправлена в Telegram: {name}')
+            return True
+        else:
+            print(f'❌ Ошибка Telegram API: {response.status_code} — {response.text}')
+            return False
+    except Exception as e:
+        print(f'❌ Ошибка отправки в Telegram: {e}')
+        return False
 
 
 # ============ ОТДАЧА ЗАГРУЖЕННЫХ ФАЙЛОВ ============
@@ -292,6 +338,7 @@ def consultation():
         if prop:
             property_title = prop.title
 
+    # 1. Сохраняем в БД
     try:
         lead = Lead(name=name, phone=phone, source=source, property_id=property_id)
         db.session.add(lead)
@@ -299,14 +346,33 @@ def consultation():
     except Exception as e:
         print(f'❌ Ошибка сохранения в БД: {e}')
 
+    # 2. Отправляем на почту
+    email_sent = False
     try:
         send_lead_email(name, phone, source, property_title)
-        print(f'✅ Заявка отправлена: {name}, {phone}')
+        email_sent = True
+        print(f'✅ Заявка на почту: {name}, {phone}')
     except Exception as e:
         print(f'❌ Ошибка отправки письма: {e}')
-        return jsonify({'status': 'error', 'message': 'Не удалось отправить заявку. Попробуйте позже.'}), 500
 
-    return jsonify({'status': 'success', 'message': f'Спасибо, {name}! Мы свяжемся с вами.'})
+    # 3. Отправляем в Telegram
+    telegram_sent = False
+    try:
+        telegram_sent = send_lead_telegram(name, phone, source, property_title)
+    except Exception as e:
+        print(f'❌ Ошибка отправки в Telegram: {e}')
+
+    # Успех — если хотя бы один канал сработал
+    if email_sent or telegram_sent:
+        return jsonify({
+            'status': 'success',
+            'message': f'Спасибо, {name}! Мы свяжемся с вами.'
+        })
+    else:
+        return jsonify({
+            'status': 'error',
+            'message': 'Не удалось отправить заявку. Попробуйте позже.'
+        }), 500
 
 
 # ============ АДМИН-ПАНЕЛЬ ============
@@ -545,7 +611,6 @@ def init_db():
         else:
             print(f'ℹ️ База данных уже содержит {Property.query.count()} объектов.')
 
-        # АВТОЗАПОЛНЕНИЕ КООРДИНАТ для объектов без них
         try:
             auto_geocode_missing()
         except Exception as e:
@@ -566,4 +631,5 @@ with app.app_context():
 # ============ ЗАПУСК (локально) ============
 
 if __name__ == '__main__':
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
